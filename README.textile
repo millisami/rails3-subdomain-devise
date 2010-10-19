@@ -9,46 +9,46 @@ The major changes are:
 h3. User and Subdomain documents
 
 <pre><code>
-	class Subdomain
-	  include Mongoid::Document
-	  include Mongoid::FindBy
+class Subdomain
+  include Mongoid::Document
+  include Mongoid::FindBy
 
-	  field :name
+  field :name
 
-	  references_many :users, :dependent => :destroy
+  references_many :users, :dependent => :destroy
 
-	  # has_friendly_id :name, :use_slug => true, :strip_non_ascii => true
-	  validates_uniqueness_of :name, :case_sensitive => false
-	  validates_presence_of :name
-	end
-	
-	class User
-	  include Mongoid::Document
-	  include Mongoid::Timestamps
+  # has_friendly_id :name, :use_slug => true, :strip_non_ascii => true
+  validates_uniqueness_of :name, :case_sensitive => false
+  validates_presence_of :name
+end
 
-	  field :name
-	  field :email
+class User
+  include Mongoid::Document
+  include Mongoid::Timestamps
 
-	  referenced_in :subdomain
-	  devise :database_authenticatable, :registerable,
-	         :recoverable, :rememberable, :trackable, :validatable
-	  validates_presence_of :name, :subdomain_name
-	  validates_uniqueness_of  :email, :case_sensitive => false
-	  attr_accessor :subdomain_name
-	  attr_accessible :name, :subdomain_name, :email, :password, :password_confirmation, :remember_me
-	  # has_friendly_id :subdomain_name, :use_slug => true, :strip_non_ascii => true
-	  before_create :create_subdomain
+  field :name
+  field :email
 
-	  private
-	  def create_subdomain
-	    subdomain_exist = Subdomain.find_by_name(self.subdomain_name)
-	    if subdomain_exist
-	      self.subdomain = subdomain_exist
-	    else
-	      self.subdomain = Subdomain.find_or_create_by(:name => self.subdomain_name, :user_id => self.id)
-	    end
-	  end
-	end	
+  referenced_in :subdomain
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :trackable, :validatable
+  validates_presence_of :name, :subdomain_name
+  validates_uniqueness_of  :email, :case_sensitive => false
+  attr_accessor :subdomain_name
+  attr_accessible :name, :subdomain_name, :email, :password, :password_confirmation, :remember_me
+  # has_friendly_id :subdomain_name, :use_slug => true, :strip_non_ascii => true
+  before_create :create_subdomain
+
+  private
+  def create_subdomain
+    subdomain_exist = Subdomain.find_by_name(self.subdomain_name)
+    if subdomain_exist
+      self.subdomain = subdomain_exist
+    else
+      self.subdomain = Subdomain.find_or_create_by(:name => self.subdomain_name, :user_id => self.id)
+    end
+  end
+end	
 </code></pre>
 
 The majority of the subdomains controller has been stubbed in that "sign_up" will create a subdomain if it does not exist. Code was not removed in that an Admin user might want to delete subdomains and associated users.
