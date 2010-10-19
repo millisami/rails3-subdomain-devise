@@ -1,59 +1,54 @@
-h1. Fork of Rails3-Subdomain-Devise modified for basecamp-like subdomaims
+h1. Fork of Rails3-Subdomain-Devise modified for basecamp-like subdomaims, but using Mongoid and Mongodb.
 
 Use this project as a starting point for a Rails 3 application that uses basecamp-like subdomains and authentication. User management and authentication is implemented using "Devise":http://github.com/plataformatec/devise.
 
-This is a stab of modifying "Rails3-Subdomain-Devise":http://github.com/fortuity/rails3-subdomain-devise/ to provide basecamp-like subdomains.
-
-Thanks to "babinho's fork":http://github.com/babinho/rails3-subdomain-devise/ for cleaning up some things up and going back to a subdomain id instead of name as the primary key.
+This is a stab of modifying "Rails3-Subdomain-Devise":http://github.com/salex/rails3-subdomain-devise using Mongoid wit Mongodb.
 
 The major changes are:
 
-h3. Routing
-
-Routes and associations were modified:
-
-<pre>
-  devise_for :users
-  resources :users, :only => [:index, :show]   
-  resources :subdomains, :only => [:index, :show]
-  constraints(SubdomainRoute) do
-    match '/' => 'sites#index'
-    match '/opps' => 'sites#opps'
-  end
-  
-  root :to => "home#index"
-</pre>
-
-User and subdomains are no longer nested, but associated. 
+h3. User and Subdomain documents
 
 <pre><code>
-	class Subdomain < ActiveRecord::Base
-	  has_many :users
-	  has_friendly_id :name, :use_slug => true, :strip_non_ascii => true
+	class Subdomain
+	  include Mongoid::Document
+	  include Mongoid::FindBy
+
+	  field :name
+
+	  references_many :users, :dependent => :destroy
+
+	  # has_friendly_id :name, :use_slug => true, :strip_non_ascii => true
 	  validates_uniqueness_of :name, :case_sensitive => false
 	  validates_presence_of :name
 	end
 	
-	class User < ActiveRecord::Base
-	  belongs_to :subdomain
+	class User
+	  include Mongoid::Document
+	  include Mongoid::Timestamps
+
+	  field :name
+	  field :email
+
+	  referenced_in :subdomain
 	  devise :database_authenticatable, :registerable,
 	         :recoverable, :rememberable, :trackable, :validatable
 	  validates_presence_of :name, :subdomain_name
 	  validates_uniqueness_of  :email, :case_sensitive => false
+	  attr_accessor :subdomain_name
 	  attr_accessible :name, :subdomain_name, :email, :password, :password_confirmation, :remember_me
-	  #has_friendly_id :subdomain_name, :use_slug => true, :strip_non_ascii => true
+	  # has_friendly_id :subdomain_name, :use_slug => true, :strip_non_ascii => true
 	  before_create :create_subdomain
 
 	  private
-
 	  def create_subdomain
-	    self.subdomain = Subdomain.find_by_name(self.subdomain_name) 
-	    self.subdomain ||= Subdomain.create!(:name => self.subdomain_name, :user_id => self.id)
+	    subdomain_exist = Subdomain.find_by_name(self.subdomain_name)
+	    if subdomain_exist
+	      self.subdomain = subdomain_exist
+	    else
+	      self.subdomain = Subdomain.find_or_create_by(:name => self.subdomain_name, :user_id => self.id)
+	    end
 	  end
-	
-	end
-	
-	
+	end	
 </code></pre>
 
 The majority of the subdomains controller has been stubbed in that "sign_up" will create a subdomain if it does not exist. Code was not removed in that an Admin user might want to delete subdomains and associated users.
@@ -78,8 +73,6 @@ Installation (I think!)
 
 * git clone
 * bundle install
-* rake db:create
-* rake db:migrate
 * rake db:seed
 
 
