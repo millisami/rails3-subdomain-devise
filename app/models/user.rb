@@ -1,5 +1,11 @@
-class User < ActiveRecord::Base
-  belongs_to :subdomain
+class User
+  include Mongoid::Document
+  include Mongoid::Timestamps
+  
+  field :name
+  field :email
+  
+  referenced_in :subdomain
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable
   validates_presence_of :name, :subdomain_name
@@ -11,7 +17,11 @@ class User < ActiveRecord::Base
   
   private
   def create_subdomain
-    self.subdomain = Subdomain.find_by_name(self.subdomain_name) 
-    self.subdomain ||= Subdomain.create!(:name => self.subdomain_name, :user_id => self.id)
+    subdomain_exist = Subdomain.find_by_name(self.subdomain_name)
+    if subdomain_exist
+      self.subdomain = subdomain_exist
+    else
+      self.subdomain = Subdomain.find_or_create_by(:name => self.subdomain_name, :user_id => self.id)
+    end
   end
 end

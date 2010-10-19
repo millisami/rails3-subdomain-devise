@@ -1,7 +1,8 @@
 class SitesController < ApplicationController
   
   def index
-    @site = Site.find_by_name(current_subdomain.name)
+    puts "CURRENT_SUBDOMAIN:: #{current_subdomain.inspect}"
+    @site = Subdomain.find_by_name(current_subdomain.name)
   end
   
   def opps
